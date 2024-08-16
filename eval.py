@@ -20,9 +20,13 @@ from utils import energy_ratios, ensure_dir, print_mean_std
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument("--destination_folder", type=str, help="Name of destination folder.")
-    parser.add_argument("--test_dir", type=str, required=True, help='Directory containing the test data')
-    parser.add_argument("--ckpt", type=str, help='Path to model checkpoint.')
+    parser.add_argument("--destination_folder", default="enhanced", type=str, help="Name of destination folder.")
+    parser.add_argument("--test_dir", type=str, default="/Users/jasperkirton/Documents/COG-MHEAR/GRID_CHiME3/bus/S1/0/noisy/",
+                                                         help='Directory containing the test data')
+    parser.add_argument("--ckpt", type=str, default="/Users/jasperkirton/Documents/COG-MHEAR/ind_diff/bbed_epoch=222-pesq=3.04.ckpt",
+                        help='Path to model checkpoint.')
+    parser.add_argument("--device", type=str, default="cpu",
+                        help='Hardware type')
     parser.add_argument("--sampler_type", type=str, choices=("pc", "ode"), default="pc",
                         help="Specify the sampler type")
     parser.add_argument("--predictor", type=str,
@@ -46,14 +50,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    clean_dir = join(args.test_dir, "test", "clean")
-    noisy_dir = join(args.test_dir, "test", "noisy")
+    #clean_dir = join(args.test_dir, "test", "clean")
+    noisy_dir = join(args.test_dir)
 
     checkpoint_file = args.ckpt
     
     #please change this directory 
-    target_dir = "/export/home/lay/PycharmProjects/ncsnpp/enhanced/{}/".format(
-        args.destination_folder)
+    target_dir = args.destination_folder
 
     ensure_dir(target_dir + "files/")
 
@@ -77,10 +80,10 @@ if __name__ == '__main__':
     # Load score model
     model = ScoreModel.load_from_checkpoint(
         checkpoint_file, base_dir="",
-        batch_size=16, num_workers=0, kwargs=dict(gpu=False)
+        batch_size=16, num_workers=0, kwargs=dict(gpu=False), map_location="cpu"
     )
     model.eval(no_ema=False)
-    model.cuda()
+    #model.cuda()
 
     noisy_files = sorted(glob.glob('{}/*.wav'.format(noisy_dir)))
     
@@ -100,23 +103,23 @@ if __name__ == '__main__':
         filename = noisy_file.split('/')[-1]
         
         # Load wav
-        x, _ = load(join(clean_dir, filename))
+#        x, _ = load(join(clean_dir, filename))
         y, _ = load(noisy_file)
         
 
-        x_hat = model.enhance(y, sampler_type=sampler_type, predictor=predictor, 
+        x_hat = model.enhance(y, device=args.device, sampler_type=sampler_type, predictor=predictor,
                 corrector=corrector, corrector_steps=corrector_steps, N=N, snr=snr,
                 atol=atol, rtol=rtol, timestep_type=timestep_type, correct_stepsize=correct_stepsize)
 
 
         # Convert to numpy
-        x = x.squeeze().cpu().numpy()
-        y = y.squeeze().cpu().numpy()
-        n = y - x
+        #x = x.squeeze().cpu().numpy()
+        #y = y.squeeze().cpu().numpy()
+        #n = y - x
 
         # Write enhanced wav file
         write(target_dir + "files/" + filename, x_hat, 16000)
-
+        '''
         # Append metrics to data frame
         data["filename"].append(filename)
         try:
@@ -159,3 +162,4 @@ if __name__ == '__main__':
         if sampler_type == "ode":
             file.write("atol: {}\n".format(atol))
             file.write("rtol: {}\n".format(rtol))
+    '''

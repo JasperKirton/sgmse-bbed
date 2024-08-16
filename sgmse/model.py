@@ -302,7 +302,7 @@ class ScoreModel(pl.LightningModule):
 
 
 
-    def enhance(self, y, sampler_type="pc", predictor="reverse_diffusion",
+    def enhance(self, y, device, sampler_type="pc", predictor="reverse_diffusion",
         corrector="ald", N=30, corrector_steps=1, snr=0.5, timeit=False,
         **kwargs
     ):
@@ -316,18 +316,18 @@ class ScoreModel(pl.LightningModule):
         y = y / norm_factor
 
         
-        Y = torch.unsqueeze(self._forward_transform(self._stft(y.cuda())), 0)
+        Y = torch.unsqueeze(self._forward_transform(self._stft(y.to(device))), 0)
         Y = pad_spec(Y)
         
             
         
         
         if sampler_type == "pc":
-            sampler = self.get_pc_sampler(predictor, corrector, Y.cuda(), N=N, 
+            sampler = self.get_pc_sampler(predictor, corrector, Y.to(device), N=N,
                 corrector_steps=corrector_steps, snr=snr, intermediate=False,
                 **kwargs)
         elif sampler_type == "ode":
-            sampler = self.get_ode_sampler(Y.cuda(), N=N, **kwargs)
+            sampler = self.get_ode_sampler(Y.to(device), N=N, **kwargs)
         else:
             print("{} is not a valid sampler type!".format(sampler_type))
         sample, nfe = sampler()
