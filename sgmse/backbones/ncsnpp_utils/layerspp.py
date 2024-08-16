@@ -114,7 +114,7 @@ class Upsample(nn.Module):
   def forward(self, x):
     B, C, H, W = x.shape
     if not self.fir:
-      h = F.interpolate(x, (H * 2, W * 2), 'nearest')
+      h = F.interpolate(x, (H * 2, W * 2), mode='nearest')
       if self.with_conv:
         h = self.Conv_0(h)
     else:

@@ -25,7 +25,7 @@ if __name__ == '__main__':
                                                          help='Directory containing the test data')
     parser.add_argument("--ckpt", type=str, default="/Users/jasperkirton/Documents/COG-MHEAR/ind_diff/bbed_epoch=222-pesq=3.04.ckpt",
                         help='Path to model checkpoint.')
-    parser.add_argument("--device", type=str, default="cpu",
+    parser.add_argument("--device", type=str, default="mps",
                         help='Hardware type')
     parser.add_argument("--sampler_type", type=str, choices=("pc", "ode"), default="pc",
                         help="Specify the sampler type")
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     # Load score model
     model = ScoreModel.load_from_checkpoint(
         checkpoint_file, base_dir="",
-        batch_size=16, num_workers=0, kwargs=dict(gpu=False), map_location="cpu"
+        batch_size=16, num_workers=0, kwargs=dict(gpu=False), map_location= args.device
     )
     model.eval(no_ema=False)
     #model.cuda()
