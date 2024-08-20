@@ -21,8 +21,9 @@ from utils import energy_ratios, ensure_dir, print_mean_std
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--destination_folder", default="enhanced", type=str, help="Name of destination folder.")
-    parser.add_argument("--test_dir", type=str, default="/Users/jasperkirton/Documents/COG-MHEAR/GRID_CHiME3/bus/S1/0/noisy/",
-                                                         help='Directory containing the test data')
+    parser.add_argument("--test_env", type=str, default="bus", help='Directory containing the test data')
+    parser.add_argument("--test_snr", type=str, default="m12", help='Directory containing the test data')
+    parser.add_argument("--test_speaker", type=str, default="1", help='Directory containing the test data')
     parser.add_argument("--ckpt", type=str, default="/Users/jasperkirton/Documents/COG-MHEAR/ind_diff/bbed_epoch=222-pesq=3.04.ckpt",
                         help='Path to model checkpoint.')
     parser.add_argument("--device", type=str, default="mps",
@@ -31,13 +32,13 @@ if __name__ == '__main__':
                         help="Specify the sampler type")
     parser.add_argument("--predictor", type=str,
                         default="reverse_diffusion", help="Predictor class for the PC sampler.")
-    parser.add_argument("--reverse_starting_point", type=float, default=1.0, help="Starting point for the reverse SDE.")
-    parser.add_argument("--force_N", type=int, default=0, help="Force the number of reverse steps for modified reverse starting point.")
+    parser.add_argument("--reverse_starting_point", type=float, default=0.5, help="Starting point for the reverse SDE.")
+    parser.add_argument("--force_N", type=int, default=10, help="Force the number of reverse steps for modified reverse starting point.")
     parser.add_argument("--corrector", type=str, choices=("ald", "none"), default="ald",
                         help="Corrector class for the PC sampler.")
     parser.add_argument("--corrector_steps", type=int, default=1, help="Number of corrector steps")
     parser.add_argument("--snr", type=float, default=0.5, help="SNR value for annealed Langevin dynmaics.")
-    parser.add_argument("--N", type=int, default=30, help="Number of reverse steps")
+    parser.add_argument("--N", type=int, default=10, help="Number of reverse steps")
     parser.add_argument("--atol", type=float, default=1e-5, help="Absolute tolerance for the ODE sampler")
     parser.add_argument("--rtol", type=float, default=1e-5, help="Relative tolerance for the ODE sampler")
     parser.add_argument("--timestep_type", type=str, default='linear', help="timestep for sampling")
@@ -50,14 +51,19 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    #clean_dir = join(args.test_dir, "test", "clean")
-    noisy_dir = join(args.test_dir)
+    noisy_root = "/Users/jasperkirton/Documents/COG-MHEAR/GRID_CHiME3/"
+    clean_root =  "/Users/jasperkirton/Documents/COG-MHEAR/Grid"
+
+    noisy_dir = join(noisy_root, args.test_env, "S" + args.test_speaker, args.test_snr, "noisy/")
+    clean_dir = join(clean_root, "s" + args.test_speaker, "audio_16000")
 
     checkpoint_file = args.ckpt
     
     #please change this directory 
-    target_dir = args.destination_folder
+    target_dir = join(args.destination_folder, args.test_env, args.test_snr, "S" + args.test_speaker +
+                     args.device + '_' + str(args.force_N) + '_' + str(args.reverse_starting_point) + "/")
 
+    ensure_dir(target_dir)
     ensure_dir(target_dir + "files/")
 
     # Settings
@@ -80,7 +86,7 @@ if __name__ == '__main__':
     # Load score model
     model = ScoreModel.load_from_checkpoint(
         checkpoint_file, base_dir="",
-        batch_size=16, num_workers=0, kwargs=dict(gpu=False), map_location= args.device
+        batch_size=16, num_workers=0, kwargs=dict(gpu=True), map_location= args.device
     )
     model.eval(no_ema=False)
     #model.cuda()
@@ -103,7 +109,8 @@ if __name__ == '__main__':
         filename = noisy_file.split('/')[-1]
         
         # Load wav
-#        x, _ = load(join(clean_dir, filename))
+        x, _ = load(join(clean_dir, filename))
+        #x = x[0]
         y, _ = load(noisy_file)
         
 
@@ -113,13 +120,13 @@ if __name__ == '__main__':
 
 
         # Convert to numpy
-        #x = x.squeeze().cpu().numpy()
-        #y = y.squeeze().cpu().numpy()
-        #n = y - x
+        x = x.squeeze().cpu().numpy()
+        y = y.squeeze().cpu().numpy()
+        n = y - x
 
         # Write enhanced wav file
         write(target_dir + "files/" + filename, x_hat, 16000)
-        '''
+
         # Append metrics to data frame
         data["filename"].append(filename)
         try:
@@ -162,4 +169,3 @@ if __name__ == '__main__':
         if sampler_type == "ode":
             file.write("atol: {}\n".format(atol))
             file.write("rtol: {}\n".format(rtol))
-    '''

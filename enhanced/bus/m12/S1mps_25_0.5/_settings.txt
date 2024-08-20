@@ -1,0 +1,11 @@
+checkpoint file: ../bbed_epoch=222-pesq=3.04.ckpt
+sampler_type: pc
+predictor: reverse_diffusion
+corrector: ald
+corrector_steps: 1
+N: 25
+N forced: 25
+Reverse starting point: 0.5
+snr: 0.5
+timestep type: linear
+correct_stepsize: True

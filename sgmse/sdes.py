@@ -258,7 +258,7 @@ class BBED(SDE):
         self.N = N
         self.Eilog = sc.expi(-2*self.logk)
         self.T = T_sampling #for sampling in train step and inference
-        self.Tc = 0.999 #for constructing the SDE, dont change this
+        self.Tc = 1 #for constructing the SDE, dont change this # 0.999
 
 
     def copy(self):
@@ -285,7 +285,7 @@ class BBED(SDE):
         return mean
 
     def _std(self, t):
-        t_np = t.cpu().detach().numpy() * 0.999
+        t_np = t.cpu().detach().numpy() #* 0.999
         Eis = sc.expi(2*(t_np-1)*self.logk) - self.Eilog
         h = 2*self.k**2*self.logk
         var = (self.k**(2*t_np)-1+t_np) + h*(1-t_np)*Eis

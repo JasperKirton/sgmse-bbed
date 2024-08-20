@@ -51,7 +51,7 @@ class NCSNpp(nn.Module):
         attn_resolutions = (16,),
         resamp_with_conv = True,
         conditional = True,
-        fir = False, #I changed
+        fir = True,
         fir_kernel = 'song',
         skip_rescale = True,
         resblock_type = 'biggan',
